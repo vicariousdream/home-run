@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lily's Road Trip Adventure</title>
+    <style>
+        /* --- CORE VARIABLES & RESET --- */
+        :root {
+            --sky-color: #87CEEB;
+            --road-color: #F4D03F;
+            --modal-bg: rgba(255, 255, 255, 0.98);
+            --font-main: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.2);
+            --shadow-deep: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--sky-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        /* --- ANIMATED BACKGROUND --- */
+        body::before {
+            content: "☁️        ☁️     ☁️";
+            position: fixed;
+            top: 20px;
+            left: -100px;
+            font-size: 3rem;
+            color: white;
+            opacity: 0.8;
+            animation: moveClouds 25s linear infinite;
+            z-index: -1;
+            width: 200%;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        @keyframes moveClouds {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(50%); }
+        }
+
+        /* --- TITLE --- */
+        h1 {
+            background-color: #FF69B4;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            box-shadow: 0 4px 0 #C71585;
+            margin-top: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+            animation: bounceTitle 3s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        @keyframes bounceTitle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* --- ROAD MAP --- */
+        #game-map {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            padding: 40px 20px 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #road-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 12px;
+            background-color: white;
+            border-left: 4px dashed #555;
+            border-right: 4px dashed #555;
+            z-index: 0;
+            border-radius: 10px;
+        }
+
+        /* --- STOPS --- */
+        .stop-container {
+            position: relative;
+            z-index: 1;
+            margin: 15px 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .stop-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 5px solid white;
+            font-size: 2.5rem;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: var(--shadow-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #FFD700;
+            position: relative;
+        }
+
+        .stop-btn:active { transform: scale(0.9); }
+        .stop-btn:hover { transform: scale(1.1) rotate(5deg); }
+
+        .stop-btn.completed {
+            background-color: #90EE90 !important;
+            border-color: #2E8B57;
+            filter: grayscale(0.1);
+        }
+
+        .stop-btn.completed::after {
+            content: "✅";
+            position: absolute;
+            top: -5px; right: -5px;
+            font-size: 1.5rem;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .stop-label {
+            position: absolute;
+            bottom: -28px;
+            background: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            border: 2px solid #333;
+            white-space: nowrap;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.1);
+        }
+
+        /* --- MODAL --- */
+        #activity-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(2px);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #activity-modal.visible {
+            opacity: 1;
+        }
+
+        .modal-content {
+            background-color: var(--modal-bg);
+            padding: 25px;
+            border-radius: 25px;
+            text-align: center;
+            width: 90%;
+            max-width: 420px;
+            border: 8px solid #FF69B4;
+            box-shadow: var(--shadow-deep);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #activity-modal.visible .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px; right: 10px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px; height: 35px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2rem;
+            line-height: 1;
+            box-shadow: 0 2px 0 #d63031;
+        }
+
+        .modal-close:active { transform: translateY(2px); box-shadow: none; }
+
+        #modal-title { margin: 10px 0 5px; color: #333; font-size: 1.6rem; }
+        #modal-instruction { font-size: 1.1rem; color: #555; margin-bottom: 20px; line-height: 1.4; }
+
+        /* --- MINI-GAME AREA --- */
+        #mini-game-area {
+            width: 100%;
+            height: 280px;
+            background: #f0f8ff;
+            border-radius: 18px;
+            border: 3px dashed #87CEEB;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 20px;
+            touch-action: none; /* Critical for dragging games on mobile */
+        }
+
+        .done-btn {
+            background-color: #32CD32;
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #228B22;
+            display: none;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            font-family: inherit;
+        }
+        
+        .done-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #228B22;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* --- VICTORY SCREEN --- */
+        #victory-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(to bottom, #87CEEB, #90EE90);
+            z-index: 200;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #victory-screen.visible { opacity: 1; }
+
+        #victory-message {
+            font-size: 2.8rem;
+            color: #FF4500;
+            text-shadow: 3px 3px 0px white;
+            margin: 20px;
+            animation: victoryScale 1.5s infinite alternate;
+            padding: 0 20px;
+        }
+
+        @keyframes victoryScale {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.05); }
+        }
+
+        .home-icon { font-size: 8rem; margin-bottom: 20px; }
+        
+        .confetti {
+            position: absolute;
+            width: 12px; height: 12px;
+            animation: fall linear forwards;
+            z-index: 199;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(110vh) rotate(720deg); }
+        }
+
+        /* --- MINI-GAME SPECIFICS (UPDATED FOR NEW MECHANICS) --- */
+
+        /* General Progress Bar (Used in Truck Wash, etc) */
+        .game-progress-bar {
+            position: absolute; top: 10px; left: 10%; width: 80%; height: 20px;
+            background: #eee; border: 2px solid #333; border-radius: 10px; overflow: hidden;
+            z-index: 50;
+        }
+        .game-progress-fill {
+            height: 100%; width: 0%; background: #00b894; transition: width 0.3s;
+        }
+
+        /* Truck Wash */
+        .truck-container { position: relative; font-size: 8rem; line-height: 1; pointer-events: none; }
+        .dirt-spot {
+            position: absolute; width: 25px; height: 25px; /* Slightly smaller for more density */
+            background-color: #654321; border-radius: 50%;
+            opacity: 0.95; cursor: crosshair; transition: opacity 0.2s, transform 0.2s;
+            pointer-events: auto;
+        }
+
+        /* Fuel Up */
+        .fuel-game { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .fuel-meter-container {
+            width: 80%; height: 35px;
+            background: #eee; border: 3px solid #333;
+            border-radius: 20px; margin-bottom: 25px; overflow: hidden;
+            position: relative;
+        }
+        .fuel-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #ff6b6b, #2ecc71); transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .pump-btn {
+            font-size: 3.5rem; background: none; border: none; cursor: pointer;
+            transition: transform 0.1s; filter: drop-shadow(0 4px 0 rgba(0,0,0,0.2));
+        }
+        .pump-btn:active:not(:disabled) { transform: scale(0.9); filter: none; }
+        .pump-btn:disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
+
+        /* Animal Crossing */
+        .animal-round-indicator {
+            position: absolute; top: 10px; width: 100%; text-align: center;
+            font-weight: bold; color: #555;
+        }
+        .animal-grid { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+        .animal-card {
+            font-size: 4.5rem; cursor: pointer;
+            width: 90px; height: 90px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 15px; background: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background-color 0.3s;
+            border: 2px solid transparent;
+        }
+        .animal-card:active { transform: scale(0.92); }
+
+        /* Snack Stop - Falling Items */
+        .snack-game { position: relative; width: 100%; height: 100%; overflow: hidden; }
+        .basket {
+            position: absolute; bottom: 15px; right: 15px;
+            font-size: 5.5rem; z-index: 1; pointer-events: none;
+        }
+        .falling-snack {
+            position: absolute; font-size: 3rem; cursor: pointer;
+            user-select: none; z-index: 10;
+        }
+
+        /* Sing Along */
+        .song-list-container {
+            display: flex; flex-direction: column; gap: 10px; width: 100%; height: 100%;
+            overflow-y: auto; padding: 10px; align-items: center;
+        }
+        .song-btn {
+            width: 100%; padding: 12px;
+            background: #fff; border: 2px solid #87CEFA; border-radius: 10px;
+            font-size: 1rem; color: #333; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; gap: 10px;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .song-btn:active { transform: scale(0.98); background: #f0f8ff; }
+        .song-btn span { font-size: 1.5rem; }
+
+        .song-player-container {
+            display: none; flex-direction: column; align-items: center; 
+            justify-content: center; width: 100%; height: 100%;
+            position: relative;
+        }
+        .player-visual { font-size: 6rem; margin-bottom: 20px; animation: bounceTitle 2s infinite; }
+        
+        .player-controls {
+            display: flex; gap: 20px; width: 100%; justify-content: center; margin-top: auto; padding-bottom: 10px;
+        }
+        
+        .back-btn {
+            background: #ff6b6b; color: white; border: none; padding: 10px 20px;
+            border-radius: 30px; font-weight: bold; font-size: 1rem; cursor: pointer;
+            box-shadow: 0 4px 0 #d63031;
+        }
+        .back-btn:active { transform: translateY(4px); box-shadow: none; }
+        
+        .finish-singing-btn {
+            background: #32CD32; color: white; border: none; padding: 10px 20px;
+            border-radius: 30px; font-weight: bold; font-size: 1rem; cursor: pointer;
+            box-shadow: 0 4px 0 #228B22;
+        }
+        .finish-singing-btn:active { transform: translateY(4px); box-shadow: none; }
+
+        .music-note {
+            position: absolute; font-size: 2.5rem; color: #9370DB;
+            animation: floatUp 2.5s ease-out forwards;
+            pointer-events: none;
+        }
+        @keyframes floatUp {
+            0% { opacity: 0; transform: translateY(50px) scale(0.5) rotate(0deg); }
+            20% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-150px) scale(1.5) rotate(45deg); }
+        }
+
+        /* Wiggly Bridge */
+        .wiggly-container { width: 100%; height: 100%; position: relative; background: #e0f7fa; overflow: hidden; }
+        .wiggly-path {
+            position: absolute; top: 50%; left: 0; width: 100%; height: 6px;
+            background: repeating-linear-gradient(90deg, #555 0, #555 15px, transparent 15px, transparent 30px);
+            transform: translateY(-50%); opacity: 0.4; pointer-events: none;
+        }
+        .bridge-checkpoint {
+            position: absolute; top: 50%; width: 20px; height: 20px;
+            background: #FFD700; border: 2px solid #333; border-radius: 50%;
+            transform: translate(-50%, -50%); z-index: 5;
+        }
+        .bridge-checkpoint.reached { background: #00b894; border-color: white; }
+        .bridge-dot {
+            width: 40px; height: 40px; background: #ff4757; border-radius: 50%;
+            position: absolute; top: 50%; left: 20px;
+            transform: translate(-50%, -50%);
+            cursor: grab; box-shadow: 0 0 15px rgba(255, 71, 87, 0.6);
+            border: 3px solid white;
+            z-index: 10;
+        }
+        .bridge-dot:active { cursor: grabbing; }
+
+        /* Home Stretch */
+        .runner-track {
+            width: 90%; height: 6px; background: #333; position: relative; margin-top: 60px; border-radius: 3px;
+        }
+        .runner {
+            position: absolute; top: -55px; left: 0; font-size: 3.5rem;
+            transition: left 0.3s ease-out; /* Slower smoothing */
+        }
+        .finish-line {
+            position: absolute; right: 0; top: -45px; font-size: 3rem;
+            border-left: 3px dashed black; height: 70px; padding-left: 5px;
+            line-height: 1;
+        }
+        .run-btn {
+            margin-top: 50px; background: #FF6347; color: white; border: none;
+            padding: 18px 40px; border-radius: 40px; font-size: 1.4rem;
+            box-shadow: 0 5px 0 #B22222; cursor: pointer; font-family: inherit;
+            transition: transform 0.1s, background 0.2s;
+        }
+        .run-btn:active:not(:disabled) { transform: translateY(5px); box-shadow: none; }
+        .run-btn.boosting { background: #FFD700; box-shadow: 0 5px 0 #daa520; color: #333; }
+        .run-btn:disabled { background: #ccc; box-shadow: none; cursor: default; }
+
+    </style>
+</head>
+<body>
+
+    <h1>Lily’s Road Trip! 🚗💨</h1>
+
+    <div id="game-map">
+        <div id="road-line"></div>
+        <!-- Stops generated by JS -->
+    </div>
+
+    <!-- The Activity Modal -->
+    <div id="activity-modal" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <button class="modal-close" onclick="Game.closeModal()" aria-label="Close">✕</button>
+            <h2 id="modal-title">Activity</h2>
+            <p id="modal-instruction">Instruction</p>
+            
+            <div id="mini-game-area"></div>
+
+            <button id="main-done-btn" class="done-btn" onclick="Game.completeStop()">DONE!</button>
+        </div>
+    </div>
+
+    <!-- The Victory Screen -->
+    <div id="victory-screen">
+        <div class="home-icon">🏡❤️</div>
+        <div id="victory-message">YOU MADE IT HOME, LILY!</div>
+        <button class="done-btn" style="display: block; background-color: #FF69B4; box-shadow: 0 5px 0 #C71585;" onclick="location.reload()">Play Again!</button>
+    </div>
+
+    <script>
+        /**
+         * Game Configuration and Data
+         */
+        const Config = {
+            stops: [
+                { id: 1, title: "Truck Wash", color: "#FFB6C1", type: "wash", emoji: "🚿", text: "Rub the dirty spots 3 times to clean them!" },
+                { id: 2, title: "Fuel Up", color: "#FFA07A", type: "fuel", emoji: "⛽", text: "Tap carefully! Don't let the pump overheat." },
+                { id: 3, title: "Animal Crossing", color: "#98FB98", type: "animal", emoji: "🐄", text: "Find the animal for 3 rounds!" },
+                { id: 4, title: "Snack Stop", color: "#DDA0DD", type: "snack", emoji: "🍎", text: "Tap the falling snacks to catch 10 of them!" },
+                { id: 5, title: "Sing-Along", color: "#87CEFA", type: "sing", emoji: "🎤", text: "Pick a song and sing along!" },
+                { id: 6, title: "Wiggly Bridge", color: "#F0E68C", type: "bridge", emoji: "〰️", text: "Drag the dot through all the yellow checkpoints!" },
+                { id: 7, title: "Home Stretch", color: "#FFD700", type: "run", emoji: "🏃‍♀️", text: "Tap to Run! Watch out for the Turbo Boost!" }
+            ],
+            // Audio settings: Assumes mp3 files in the same directory. 
+            audioExt: ".mp3"
+        };
+
+        /**
+         * Helpers
+         */
+        const AudioHelper = {
+            currentMusic: null,
+
+            // Mapping abstract sound names to the specific filenames provided by user
+            soundMap: {
+                'win': 'success',
+                'ding': 'ding',
+                'error': 'error',
+                'pop': 'catchgame',
+                'click': 'computer-mouse-click',
+                'step': 'computer-mouse-click', // re-using click for steps
+                'pump': 'computer-mouse-click', 
+                'scrub': 'catchgame', // re-using pop sound for scrubbing
+                'boost': 'ding',
+                'note': 'ding'
+            },
+
+            play(name) {
+                // Stop any background music if we play a sound effect? 
+                // Usually we want overlapping, but for songs we might want control.
+                const filename = this.soundMap[name] || name;
+                
+                try { 
+                    const audio = new Audio(filename + Config.audioExt);
+                    audio.play().catch(e => console.log("Audio play failed (interaction needed first):", e));
+                    return audio;
+                } catch(e) {
+                    console.warn("Audio error:", e);
+                }
+            },
+
+            playMusic(filename) {
+                if (this.currentMusic) {
+                    this.currentMusic.pause();
+                    this.currentMusic.currentTime = 0;
+                }
+                this.currentMusic = this.play(filename);
+            },
+
+            stopMusic() {
+                if (this.currentMusic) {
+                    this.currentMusic.pause();
+                    this.currentMusic = null;
+                }
+            }
+        };
+
+        const UIHelper = {
+            createProgressBar(container) {
+                const bar = document.createElement('div');
+                bar.className = 'game-progress-bar';
+                const fill = document.createElement('div');
+                fill.className = 'game-progress-fill';
+                bar.appendChild(fill);
+                container.appendChild(bar);
+                return fill;
+            }
+        };
+
+        /**
+         * Main Game Controller
+         */
+        const Game = {
+            state: {
+                completedCount: 0,
+                currentStop: null,
+                isActive: false,
+                activeIntervals: [] // Track intervals to clear them on close
+            },
+            
+            elements: {
+                map: document.getElementById('game-map'),
+                modal: document.getElementById('activity-modal'),
+                modalTitle: document.getElementById('modal-title'),
+                modalInstruct: document.getElementById('modal-instruction'),
+                gameArea: document.getElementById('mini-game-area'),
+                doneBtn: document.getElementById('main-done-btn'),
+                victoryScreen: document.getElementById('victory-screen')
+            },
+
+            init() {
+                this.renderMap();
+                this.setupGlobalEvents();
+            },
+
+            renderMap() {
+                Config.stops.forEach(stop => {
+                    const container = document.createElement('div');
+                    container.className = 'stop-container';
+                    
+                    const btn = document.createElement('button');
+                    btn.className = 'stop-btn';
+                    btn.id = `btn-${stop.id}`;
+                    btn.textContent = stop.emoji;
+                    btn.style.backgroundColor = stop.color;
+                    btn.onclick = () => this.openStop(stop);
+
+                    const label = document.createElement('div');
+                    label.className = 'stop-label';
+                    label.textContent = `${stop.id}. ${stop.title}`;
+
+                    btn.appendChild(label);
+                    container.appendChild(btn);
+                    this.elements.map.appendChild(container);
+                });
+            },
+
+            setupGlobalEvents() {
+                this.elements.modal.onclick = (e) => {
+                    if (e.target === this.elements.modal) this.closeModal();
+                };
+            },
+
+            openStop(stop) {
+                this.state.currentStop = stop;
+                this.state.isActive = true;
+                
+                this.elements.modalTitle.textContent = stop.title;
+                this.elements.modalInstruct.textContent = stop.text;
+                this.elements.doneBtn.style.display = "none";
+                this.elements.gameArea.innerHTML = ""; 
+                
+                this.elements.modal.style.display = "flex";
+                requestAnimationFrame(() => this.elements.modal.classList.add('visible'));
+
+                MiniGames.start(stop.type, this.elements.gameArea);
+            },
+
+            closeModal() {
+                AudioHelper.stopMusic(); // Stop any songs playing
+                this.clearAllIntervals(); // Safety cleanup
+                this.elements.modal.classList.remove('visible');
+                setTimeout(() => {
+                    if (!this.elements.modal.classList.contains('visible')) {
+                        this.elements.modal.style.display = "none";
+                        this.elements.gameArea.innerHTML = ""; 
+                        this.state.isActive = false;
+                    }
+                }, 300);
+            },
+
+            registerInterval(id) {
+                this.state.activeIntervals.push(id);
+            },
+
+            clearAllIntervals() {
+                this.state.activeIntervals.forEach(clearInterval);
+                this.state.activeIntervals = [];
+            },
+
+            winCurrentMiniGame() {
+                AudioHelper.play('win');
+                this.clearAllIntervals();
+                this.elements.doneBtn.style.display = "block";
+            },
+
+            completeStop() {
+                this.closeModal();
+                const btn = document.getElementById(`btn-${this.state.currentStop.id}`);
+                if (!btn.classList.contains('completed')) {
+                    btn.classList.add('completed');
+                    this.state.completedCount++;
+                    
+                    if (this.state.completedCount === Config.stops.length) {
+                        setTimeout(() => this.triggerVictory(), 600);
+                    }
+                }
+            },
+
+            triggerVictory() {
+                this.elements.victoryScreen.style.display = "flex";
+                requestAnimationFrame(() => this.elements.victoryScreen.classList.add('visible'));
+                Effects.startConfetti(this.elements.victoryScreen);
+            }
+        };
+
+        /**
+         * Mini-Game Logic Namespace (Updated)
+         */
+        const MiniGames = {
+            start(type, container) {
+                if (this[type]) this[type](container);
+            },
+
+            wash(container) {
+                const gameDurationMultiplier = 1.0; 
+                const truck = document.createElement('div');
+                truck.className = 'truck-container';
+                truck.textContent = '🚚';
+                
+                const progressFill = UIHelper.createProgressBar(container);
+
+                const spotsCount = Math.floor(25 * gameDurationMultiplier);
+                let cleanedCount = 0;
+                let totalCleanRequired = 0;
+
+                for(let i=0; i<spotsCount; i++) {
+                    const dirt = document.createElement('div');
+                    dirt.className = 'dirt-spot';
+                    dirt.style.top = (25 + Math.random() * 50) + '%';
+                    dirt.style.left = (20 + Math.random() * 60) + '%';
+                    
+                    // Logic: Some spots need 1 rub, some need 3
+                    const maxHealth = Math.random() > 0.5 ? 3 : 1;
+                    let currentHealth = maxHealth;
+                    totalCleanRequired += maxHealth;
+
+                    // Set initial opacity based on health
+                    dirt.style.opacity = (0.3 + (currentHealth * 0.2)); 
+
+                    const clean = (e) => {
+                        e.preventDefault();
+                        if (currentHealth > 0) {
+                            currentHealth--;
+                            AudioHelper.play('scrub');
+                            
+                            // Visual feedback
+                            dirt.style.transform = 'scale(1.2)';
+                            setTimeout(() => dirt.style.transform = 'scale(1)', 100);
+                            
+                            if (currentHealth <= 0) {
+                                dirt.style.opacity = '0';
+                                dirt.style.pointerEvents = 'none';
+                            } else {
+                                dirt.style.opacity = (0.3 + (currentHealth * 0.2)); 
+                            }
+
+                            // Update Progress
+                            cleanedCount++;
+                            const pct = (cleanedCount / totalCleanRequired) * 100;
+                            progressFill.style.width = `${pct}%`;
+
+                            if (cleanedCount >= totalCleanRequired) Game.winCurrentMiniGame();
+                        }
+                    };
+                    
+                    dirt.addEventListener('mouseover', clean);
+                    dirt.addEventListener('touchstart', clean, {passive: false});
+                    truck.appendChild(dirt);
+                }
+                container.appendChild(truck);
+            },
+
+            fuel(container) {
+                const gameDurationMultiplier = 1.0;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'fuel-game';
+                
+                const meterBox = document.createElement('div');
+                meterBox.className = 'fuel-meter-container';
+                const fill = document.createElement('div');
+                fill.className = 'fuel-fill';
+                meterBox.appendChild(fill);
+                
+                const btn = document.createElement('button');
+                btn.className = 'pump-btn';
+                btn.textContent = '⛽ PUMP!';
+                
+                // --- New Mechanic: Overheat & Slow Fill ---
+                let level = 0;
+                let lastTapTime = 0;
+                let heat = 0;
+                const heatCooldownRate = 5; // Cools down this much per frame check
+                const heatLimit = 100;
+
+                // Loop to cool down pump
+                const coolDownId = setInterval(() => {
+                    if (heat > 0) {
+                        heat -= 2;
+                        if (heat < 0) heat = 0;
+                    }
+                }, 100);
+                Game.registerInterval(coolDownId);
+
+                btn.onclick = () => {
+                    const now = Date.now();
+                    const diff = now - lastTapTime;
+                    lastTapTime = now;
+
+                    // Add Heat (faster tapping = more heat)
+                    // If diff is small (<200ms), heat increases fast
+                    const heatAdd = (diff < 250) ? 25 : 10;
+                    heat += heatAdd;
+
+                    if (heat > heatLimit) {
+                        // Overheat!
+                        btn.disabled = true;
+                        btn.textContent = "TOO HOT! 🔥";
+                        AudioHelper.play('error');
+                        setTimeout(() => {
+                            heat = 0;
+                            btn.disabled = false;
+                            btn.textContent = '⛽ PUMP!';
+                        }, 2000);
+                        return;
+                    }
+
+                    // Fill logic (Slower fill per tap)
+                    if (level < 100) {
+                        level += (4 / gameDurationMultiplier); // Slower progress
+                        if (level > 100) level = 100;
+                        fill.style.width = level + '%';
+                        
+                        AudioHelper.play('pump');
+
+                        if (level >= 100) {
+                            btn.textContent = 'FULL!';
+                            Game.winCurrentMiniGame();
+                        }
+                    }
+                };
+                wrapper.appendChild(meterBox);
+                wrapper.appendChild(btn);
+                container.appendChild(wrapper);
+            },
+
+            animal(container) {
+                const gameDurationMultiplier = 1.0;
+                let currentRound = 1;
+                const totalRounds = Math.floor(3 * gameDurationMultiplier);
+
+                const roundIndicator = document.createElement('div');
+                roundIndicator.className = 'animal-round-indicator';
+                container.appendChild(roundIndicator);
+
+                const grid = document.createElement('div');
+                grid.className = 'animal-grid';
+                container.appendChild(grid);
+
+                const allAnimals = [
+                    {icon: '🐰', name: 'Bunny'}, {icon: '🦊', name: 'Fox'}, {icon: '🐼', name: 'Panda'},
+                    {icon: '🦁', name: 'Lion'}, {icon: '🐸', name: 'Frog'}, {icon: '🐷', name: 'Pig'},
+                    {icon: '🐯', name: 'Tiger'}, {icon: '🐔', name: 'Chicken'}, {icon: '🐨', name: 'Koala'}
+                ];
+
+                const startRound = () => {
+                    grid.innerHTML = "";
+                    roundIndicator.textContent = `Round ${currentRound} of ${totalRounds}`;
+
+                    // Pick 3 random animals
+                    const roundAnimals = [];
+                    const pool = [...allAnimals];
+                    for(let i=0; i<3; i++) {
+                        const idx = Math.floor(Math.random() * pool.length);
+                        roundAnimals.push(pool[idx]);
+                        pool.splice(idx, 1);
+                    }
+
+                    // Pick target
+                    const target = roundAnimals[Math.floor(Math.random() * roundAnimals.length)];
+                    document.getElementById('modal-instruction').textContent = `Find the ${target.name}!`;
+
+                    roundAnimals.forEach(anim => {
+                        const card = document.createElement('div');
+                        card.className = 'animal-card';
+                        card.textContent = anim.icon;
+                        card.onclick = () => {
+                            if (anim.name === target.name) {
+                                AudioHelper.play('success');
+                                card.style.backgroundColor = '#90EE90';
+                                setTimeout(() => {
+                                    if(currentRound < totalRounds) {
+                                        currentRound++;
+                                        startRound();
+                                    } else {
+                                        Game.winCurrentMiniGame();
+                                    }
+                                }, 800);
+                            } else {
+                                AudioHelper.play('wrong');
+                                card.style.opacity = '0.5';
+                                setTimeout(() => card.style.opacity = '1', 500);
+                            }
+                        };
+                        grid.appendChild(card);
+                    });
+                };
+
+                startRound();
+            },
+
+            snack(container) {
+                const gameDurationMultiplier = 1.0;
+                const targetCatch = Math.floor(10 * gameDurationMultiplier);
+                let catchCount = 0;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'snack-game';
+                
+                const basket = document.createElement('div');
+                basket.className = 'basket';
+                basket.textContent = '🧺';
+                wrapper.appendChild(basket);
+
+                const instructionDisplay = document.getElementById('modal-instruction');
+                instructionDisplay.textContent = `Catch ${targetCatch} snacks!`;
+
+                container.appendChild(wrapper);
+
+                const spawnSnack = () => {
+                    const snacks = ['🍪', '🍎', '🥪', '🧃', '🍕', '🍌'];
+                    const icon = snacks[Math.floor(Math.random() * snacks.length)];
+                    
+                    const item = document.createElement('div');
+                    item.className = 'falling-snack';
+                    item.textContent = icon;
+                    item.style.left = (10 + Math.random() * 70) + '%';
+                    item.style.top = '-50px';
+                    wrapper.appendChild(item);
+
+                    // Falling Animation Logic
+                    let posY = -50;
+                    const speed = 2 + Math.random() * 2;
+                    
+                    const fallInterval = setInterval(() => {
+                        posY += speed;
+                        item.style.top = posY + 'px';
+
+                        // Missed the snack
+                        if (posY > 260) {
+                            clearInterval(fallInterval);
+                            if(item.parentNode) item.remove();
+                        }
+                    }, 20);
+
+                    // Allow Game to clear this interval
+                    Game.registerInterval(fallInterval);
+
+                    // Click to catch
+                    item.onmousedown = item.ontouchstart = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        clearInterval(fallInterval); // Stop falling
+                        AudioHelper.play('pop');
+                        
+                        // Fly to basket visual
+                        item.style.transition = 'all 0.4s ease';
+                        item.style.top = '220px';
+                        item.style.left = '85%';
+                        item.style.opacity = '0';
+                        item.style.transform = 'scale(0.2)';
+
+                        catchCount++;
+                        instructionDisplay.textContent = `Caught: ${catchCount} / ${targetCatch}`;
+
+                        setTimeout(() => { if(item.parentNode) item.remove(); }, 400);
+
+                        if (catchCount >= targetCatch) {
+                            // Stop spawning
+                            clearInterval(spawnerId);
+                            Game.winCurrentMiniGame();
+                        }
+                    };
+                };
+
+                // Spawn loop
+                const spawnerId = setInterval(spawnSnack, 1000);
+                Game.registerInterval(spawnerId);
+                // Spawn one immediately
+                spawnSnack();
+            },
+
+            sing(container) {
+                // Song data matches your filenames
+                const songs = [
+                    { title: "Twinkle Twinkle Little Star", file: "Twinkletwinklelittlestar", icon: "⭐" },
+                    { title: "If You’re Happy and You Know It", file: "IfYouareHappyAndYouKnowIt", icon: "😊" },
+                    { title: "Old MacDonald Had a Farm", file: "OldMacDonaldHadAFarm", icon: "🚜" },
+                    { title: "Row, Row, Row Your Boat", file: "RowYourBoat", icon: "🚣" },
+                    // Placeholder 5th song to match "5 songs" request
+                    { title: "The Wheels on the Bus", file: "TheWheelsOnTheBus", icon: "🚌" } 
+                ];
+
+                // --- Screen 1: Selection ---
+                const menuDiv = document.createElement('div');
+                menuDiv.className = 'song-list-container';
+
+                songs.forEach(song => {
+                    const btn = document.createElement('button');
+                    btn.className = 'song-btn';
+                    btn.innerHTML = `<span>${song.icon}</span> ${song.title}`;
+                    
+                    btn.onclick = () => {
+                        // Play the music
+                        AudioHelper.playMusic(song.file);
+                        // Switch to Singing interface
+                        menuDiv.style.display = 'none';
+                        playerDiv.style.display = 'flex';
+                        startAutoNotes();
+                    };
+                    menuDiv.appendChild(btn);
+                });
+
+                container.appendChild(menuDiv);
+
+                // --- Screen 2: Singing Player (Auto) ---
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'song-player-container';
+                
+                // Visuals
+                const visual = document.createElement('div');
+                visual.className = 'player-visual';
+                visual.textContent = '🎵';
+                playerDiv.appendChild(visual);
+
+                // Controls Row
+                const controlsDiv = document.createElement('div');
+                controlsDiv.className = 'player-controls';
+
+                // Back Button
+                const backBtn = document.createElement('button');
+                backBtn.className = 'back-btn';
+                backBtn.textContent = '⬅ Pick Another Song';
+                backBtn.onclick = () => {
+                    AudioHelper.stopMusic();
+                    stopAutoNotes();
+                    playerDiv.style.display = 'none';
+                    menuDiv.style.display = 'flex';
+                    document.getElementById('modal-instruction').textContent = "Pick a song and sing along!";
+                };
+
+                // Done Button (Win Condition)
+                const doneBtn = document.createElement('button');
+                doneBtn.className = 'finish-singing-btn';
+                doneBtn.textContent = 'I Sang It! 🎉';
+                doneBtn.onclick = () => {
+                    AudioHelper.stopMusic();
+                    stopAutoNotes();
+                    Game.winCurrentMiniGame();
+                };
+
+                controlsDiv.appendChild(backBtn);
+                controlsDiv.appendChild(doneBtn);
+                playerDiv.appendChild(controlsDiv);
+
+                container.appendChild(playerDiv);
+
+                // Auto-Note Logic
+                let noteInterval = null;
+                
+                const startAutoNotes = () => {
+                    document.getElementById('modal-instruction').textContent = "Sing along! No tapping needed.";
+                    
+                    noteInterval = setInterval(() => {
+                        const note = document.createElement('div');
+                        note.className = 'music-note';
+                        note.textContent = ['🎵', '🎶', '🎼', '🎤'][Math.floor(Math.random()*4)];
+                        
+                        // Random X position
+                        const offsetX = (Math.random() * 80) - 40;
+                        note.style.left = `calc(50% + ${offsetX}px)`;
+                        // Start lower
+                        note.style.top = '60%';
+                        
+                        // Slightly random font size
+                        note.style.fontSize = (2 + Math.random()) + 'rem';
+                        
+                        container.appendChild(note);
+                        
+                        setTimeout(() => note.remove(), 2500);
+                    }, 500); // New note every 0.5s
+                    
+                    Game.registerInterval(noteInterval);
+                };
+
+                const stopAutoNotes = () => {
+                    if (noteInterval) clearInterval(noteInterval);
+                    // Clear existing notes
+                    const notes = container.querySelectorAll('.music-note');
+                    notes.forEach(n => n.remove());
+                };
+            },
+
+            bridge(container) {
+                const gameDurationMultiplier = 1.0;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'wiggly-container';
+                
+                const path = document.createElement('div');
+                path.className = 'wiggly-path';
+                // Make path look longer visually by repeating gradient more
+                path.style.background = `repeating-linear-gradient(90deg, #555 0, #555 15px, transparent 15px, transparent 30px)`;
+                
+                const dot = document.createElement('div');
+                dot.className = 'bridge-dot';
+                
+                // --- New Mechanic: Checkpoints ---
+                const checkpoints = [];
+                const totalPoints = Math.floor(3 * gameDurationMultiplier);
+                let currentPointIndex = 0;
+
+                // Create Checkpoints along the way
+                for(let i=1; i<=totalPoints; i++) {
+                    const point = document.createElement('div');
+                    point.className = 'bridge-checkpoint';
+                    // Position them at intervals (e.g., 30%, 60%, 90%)
+                    const pct = (i / (totalPoints + 1)) * 100;
+                    point.style.left = `${pct}%`;
+                    wrapper.appendChild(point);
+                    checkpoints.push(point);
+                }
+
+                wrapper.appendChild(path);
+                wrapper.appendChild(dot);
+                container.appendChild(wrapper);
+                
+                let isDragging = false;
+                
+                const onStart = (e) => {
+                    isDragging = true;
+                    dot.style.cursor = 'grabbing';
+                };
+                
+                const onEnd = () => {
+                    isDragging = false;
+                    dot.style.cursor = 'grab';
+                };
+                
+                const onMove = (e) => {
+                    if (!isDragging) return;
+                    
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const rect = wrapper.getBoundingClientRect();
+                    let x = clientX - rect.left;
+                    
+                    if (x < 0) x = 0;
+                    if (x > rect.width) x = rect.width;
+                    
+                    // Sine wave logic for Y
+                    const yOffset = Math.sin(x / 30) * 35; 
+                    
+                    dot.style.left = x + 'px';
+                    dot.style.top = `calc(50% + ${yOffset}px)`;
+                    
+                    // Check collision with current checkpoint
+                    const currentTarget = checkpoints[currentPointIndex];
+                    if (currentTarget) {
+                        const targetLeft = parseInt(currentTarget.style.left) / 100 * rect.width;
+                        // If we are close to the target (within 20px)
+                        if (Math.abs(x - targetLeft) < 20) {
+                            currentTarget.classList.add('reached');
+                            AudioHelper.play('ding');
+                            currentPointIndex++;
+                        }
+                    }
+
+                    // Win condition: All checkpoints reached AND reached end
+                    if (currentPointIndex >= totalPoints && x > rect.width * 0.92) {
+                        Game.winCurrentMiniGame();
+                        isDragging = false;
+                        window.removeEventListener('mouseup', onEnd);
+                        window.removeEventListener('touchend', onEnd);
+                        window.removeEventListener('mousemove', onMove);
+                        window.removeEventListener('touchmove', onMove);
+                    }
+                };
+
+                dot.addEventListener('mousedown', onStart);
+                dot.addEventListener('touchstart', (e) => { e.preventDefault(); onStart(e); }, {passive: false});
+
+                window.addEventListener('mouseup', onEnd);
+                window.addEventListener('touchend', onEnd);
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('touchmove', onMove, {passive: false});
+            },
+
+            run(container) {
+                const gameDurationMultiplier = 1.0;
+                const track = document.createElement('div');
+                track.className = 'runner-track';
+                
+                const runner = document.createElement('div');
+                runner.className = 'runner';
+                runner.textContent = '🏃‍♀️';
+                
+                const finish = document.createElement('div');
+                finish.className = 'finish-line';
+                finish.textContent = '🏁';
+                
+                track.appendChild(runner);
+                track.appendChild(finish);
+                
+                const btn = document.createElement('button');
+                btn.className = 'run-btn';
+                btn.textContent = 'TAP TO RUN!';
+                
+                // --- New Mechanic: Slow Run + Boost ---
+                let position = 0;
+                let tapCount = 0;
+                let isBoosting = false;
+
+                btn.onclick = () => {
+                    if (position >= 90) return;
+
+                    tapCount++;
+                    
+                    // Boost Check (Every 5 taps)
+                    if (tapCount % 5 === 0) {
+                        isBoosting = true;
+                        btn.classList.add('boosting');
+                        btn.textContent = "TURBO BOOST! 🚀";
+                        AudioHelper.play('boost');
+                        
+                        // Big jump
+                        position += 20;
+                        setTimeout(() => {
+                            isBoosting = false;
+                            btn.classList.remove('boosting');
+                            btn.textContent = 'TAP TO RUN!';
+                        }, 500);
+                    } else {
+                        // Normal small step
+                        position += (2.5 / gameDurationMultiplier); 
+                        AudioHelper.play('step');
+                    }
+
+                    if (position > 90) position = 90;
+                    runner.style.left = position + '%';
+                    
+                    if (position >= 90) {
+                        btn.disabled = true;
+                        btn.textContent = "FINISHED!";
+                        btn.style.backgroundColor = "#90EE90";
+                        Game.winCurrentMiniGame();
+                    }
+                };
+                container.appendChild(track);
+                container.appendChild(btn);
+            }
+        };
+
+        /**
+         * Visual Effects
+         */
+        const Effects = {
+            startConfetti(container) {
+                const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f', '#FFA500'];
+                const count = 80;
+                
+                for (let i = 0; i < count; i++) {
+                    const c = document.createElement('div');
+                    c.className = 'confetti';
+                    // Random positioning and delay
+                    c.style.left = Math.random() * 100 + 'vw';
+                    c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    c.style.animationDuration = (Math.random() * 2 + 3) + 's';
+                    c.style.animationDelay = (Math.random() * 1) + 's';
+                    
+                    // Random shapes (squares and circles)
+                    if (Math.random() > 0.5) c.style.borderRadius = '50%';
+                    
+                    container.appendChild(c);
+                }
+            }
+        };
+
+        // Start the game
+        Game.init();
+
+    </script>
+</body>
+</html>
